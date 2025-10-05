@@ -4,6 +4,12 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, getDoc, serv
 import { firebaseConfig } from './firebaseConfig.js';
 
 // Initialize Firebase
+console.log('[Firebase Init] Using config:', {
+    apiKey: firebaseConfig.apiKey?.slice(0,8) + '***',
+    authDomain: firebaseConfig.authDomain,
+    projectId: firebaseConfig.projectId,
+    storageBucket: firebaseConfig.storageBucket
+});
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
