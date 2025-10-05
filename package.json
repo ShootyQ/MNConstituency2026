@@ -1,0 +1,18 @@
+{
+  "name": "mnconstituencyproject",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "firebase serve --only hosting",
+    "build": "echo 'No build step required for this project'",
+    "deploy": "firebase deploy",
+    "serve": "firebase serve"
+  },
+  "dependencies": {
+    "firebase": "^10.7.1"
+  },
+  "devDependencies": {
+    "firebase-tools": "^13.0.0"
+  }
+}
