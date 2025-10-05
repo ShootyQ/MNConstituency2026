@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { firebaseConfig } from './firebaseConfig.js';
 
@@ -8,6 +8,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
 
 let currentUser = null;
 let currentUserRole = null;
@@ -15,16 +16,35 @@ let currentUserRole = null;
 // Sign in with Google
 export async function signInWithGoogle() {
     try {
+        console.log('[Auth] Attempting Google popup sign-in');
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
-        
-        // Create or update user in members collection
         await createOrUpdateMember(user);
-        
         return user;
     } catch (error) {
-        console.error('Error signing in:', error);
+        console.error('[Auth] Popup sign-in error:', error.code, error.message);
+        // Fallback to redirect for certain popup issues
+        if (error && (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user')) {
+            console.warn('[Auth] Falling back to redirect sign-in');
+            await signInWithRedirect(auth, provider);
+            return; // Flow will continue after redirect
+        }
         throw error;
+    }
+}
+
+// Handle redirect result (call this early in page lifecycle)
+export async function handleRedirectResult() {
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+            console.log('[Auth] Redirect sign-in successful');
+            await createOrUpdateMember(result.user);
+        }
+    } catch (error) {
+        if (error) {
+            console.error('[Auth] Redirect sign-in error:', error.code, error.message);
+        }
     }
 }
 

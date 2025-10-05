@@ -1,10 +1,11 @@
-﻿import { signInWithGoogle, signOutUser, onAuthStateChange, getAllUsers, checkInUser, getCurrentUser, isUserAdmin } from './firebase.js';
+﻿import { signInWithGoogle, signOutUser, onAuthStateChange, getAllUsers, checkInUser, getCurrentUser, isUserAdmin, handleRedirectResult } from './firebase.js';
 
 const loginSection = document.getElementById('loginSection');
 const dashboard = document.getElementById('dashboard');
 const userInfo = document.getElementById('userInfo');
 const adminDashboard = document.getElementById('adminDashboard');
 const googleSignInBtn = document.getElementById('googleSignIn');
+const authStatus = document.getElementById('authStatus');
 const signOutBtn = document.getElementById('signOut');
 const refreshDataBtn = document.getElementById('refreshData');
 const searchInput = document.getElementById('searchInput');
@@ -25,9 +26,19 @@ searchInput.addEventListener('input', filterUsers);
 
 init();
 
+function setAuthStatus(msg, type = 'info') {
+    if (!authStatus) return;
+    authStatus.textContent = msg;
+    authStatus.style.color = type === 'error' ? '#dc3545' : (type === 'warn' ? '#d58512' : '#0d7c8c');
+}
+
 function init() {
+    // Attempt to process any redirect result first
+    handleRedirectResult();
+    setAuthStatus('Ready to sign in');
     onAuthStateChange(async (user) => {
         if (user) {
+            setAuthStatus('Signed in');
             loginSection.style.display = 'none';
             dashboard.style.display = 'block';
             isAdmin = await isUserAdmin();
@@ -35,6 +46,7 @@ function init() {
             if (isAdmin) { adminDashboard.classList.remove('hidden'); }
             await loadUserData();
         } else {
+            setAuthStatus('Not signed in');
             loginSection.style.display = 'block';
             dashboard.style.display = 'none';
         }
@@ -43,10 +55,21 @@ function init() {
 
 async function handleGoogleSignIn() {
     try {
+        if (googleSignInBtn) {
+            googleSignInBtn.disabled = true;
+            googleSignInBtn.textContent = 'Signing in...';
+        }
+        setAuthStatus('Attempting sign-in...');
         await signInWithGoogle();
     } catch (error) {
         console.error('Sign in error:', error);
+        setAuthStatus('Sign-in failed: ' + (error.message || 'Unknown error'), 'error');
         alert('Failed to sign in: ' + error.message);
+    } finally {
+        if (googleSignInBtn) {
+            googleSignInBtn.disabled = false;
+            googleSignInBtn.textContent = 'Sign in with Google';
+        }
     }
 }
 
